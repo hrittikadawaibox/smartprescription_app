@@ -1,0 +1,110 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <script src="http://cdnjs.cloudflare.com/ajax/libs/jquery/1.7/jquery.min.js"></script>
+    <script src="http://cdnjs.cloudflare.com/ajax/libs/jqueryui/1.8.13/jquery-ui.min.js"></script>
+    <script src="http://cdnjs.cloudflare.com/ajax/libs/underscore.js/1.2.1/lodash-min.js"></script>
+    <script src="http://cdnjs.cloudflare.com/ajax/libs/backbone.js/0.5.3/backbone-min.js"></script>
+    <style>
+      body, input {
+        font: 16px/150% Helvetica, Arial, sans-serif;
+      }
+      .ui-autocomplete {
+        background-color: #fff;
+        border: 1px #ccc solid;
+        display: inline-block;
+        list-style: none;
+        margin: 0;
+        padding: 0;
+      }
+        .ui-menu-item a {
+          display: block;
+          padding: 3px;
+        }
+          a.ui-state-hover {
+            background-color: #eee;
+          }
+    </style>
+  </head>
+  <body>
+    <input type="text" id="autocomplete">
+    <ul id="selected"></ul>
+  </body>
+  <script>
+    var Autocomplete = Backbone.View.extend({
+      initialize: function(options) {
+        this.options.choices.bind('reset', this.reset, this);
+      },
+      reset: function(models) {
+        var choices = this.options.choices,
+            selected = this.options.selected,
+            iterator = this.options.iterator,
+            label = this.options.label,
+            allowDupes = this.options.allowDupes,
+            $el = $(this.el);
+        $el.autocomplete({
+          source: function(request, response) {
+            var matcher = new RegExp($.ui.autocomplete.escapeRegex(request.term), 'i');
+            response(choices.filter(function(model) {
+              return iterator(model, matcher);
+            }));
+          },
+          focus: function(event, ui) {
+            $el.val(label(ui.item));
+            return false;
+          },
+          select: function(event, ui) {
+            selected.add(ui.item);
+            if (!allowDupes) {
+              choices(ui.item);
+            }
+            $el.val('');
+            return false;
+          }
+        }).data('autocomplete')._renderItem = function(ul, item) {
+          return $('<li/>')
+            .data('item.autocomplete', item)
+            .append($('<a/>').text(label(item)))
+            .appendTo(ul);
+        };
+      }
+    });
+
+    var Item = Backbone.Model.extend({
+      initialize:function(
+        render.this();
+      )
+    }),
+
+
+
+        Items = Backbone.Collection.extend({model: Item});
+
+    var choices = new Items();
+
+    var selected = new Items();
+    selected.bind('add', function(model) {
+      $('#selected').prepend($('<li/>').text(model.get('name')));
+    });
+
+    var input = new Autocomplete({
+      el: '#autocomplete',
+      choices: choices,
+      selected: selected,
+      iterator: function(model, matcher, selected) {
+        var data = model.toJSON();
+        return matcher.test(data.name);
+      },
+      label: function(model) {
+        var data = model.toJSON();
+        return 'Item #' + data.id + ': ' + data.name;
+      }
+    });
+
+    choices.reset([
+      {id: 1, name: 'Item 1'},
+      {id: 2, name: 'Item 2'},
+      {id: 3, name: 'Item 3'}
+    ]);
+  </script>
+</html>
